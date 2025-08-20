@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: threathawk-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn threathawk.server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: THREATHAWK_API_KEY
+        value: thk_live_CHANGE_ME
+      - key: THREATHAWK_FINDINGS_PATH
+        value: /tmp/findings.jsonl
+      - key: THREATHAWK_BAN_ENABLED
+        value: "false"
+      # Uncomment if you want ingestion via Cloudflare:
+      # - key: CF_API_TOKEN
+      #   value: cf_live_YOURTOKEN
+      # - key: CF_ZONE_ID
+      #   value: YOUR_ZONE_ID
+
+  # Optional worker if you prefer internal scheduling over Render Cron Jobs
+  - type: worker
+    name: threathawk-scheduler
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scheduler_render.py
+    envVars:
+      - key: API_BASE
+        fromService:
+          name: threathawk-api
+          type: web
+          property: uri
+      - key: X_API_KEY
+        value: thk_live_CHANGE_ME
+      # If needed for on-demand ingestion inside worker:
+      - key: CF_API_TOKEN
+        value: cf_live_YOURTOKEN
+      - key: CF_ZONE_ID
+        value: YOUR_ZONE_ID

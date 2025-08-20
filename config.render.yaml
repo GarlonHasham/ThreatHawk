@@ -1,0 +1,12 @@
+site: "codeniacs.ai"
+environment: "prod"
+rules:
+  file: ./rules.yaml
+anomaly:
+  ema_alpha: 0.2
+  window_seconds: 60
+alerts:
+  min_severity: 3
+  stdout: true
+  jsonl_path: /tmp/findings.jsonl
+  webhook: null

@@ -1,33 +1,28 @@
 from __future__ import annotations
 from fastapi import FastAPI, Header, HTTPException
 from typing import Optional
-import os, json, time
+import os, json
 
-from threathawk.rules import load_rules
-from threathawk.parsers import parse_line, Event
-from threathawk.anomaly import AnomalyModel
-from threathawk.sinks import AlertSink, Finding
-from threathawk.config import load as load_cfg
+from .rules import load_rules
+from .parsers import parse_line
+from .anomaly import AnomalyModel
+from .sinks import AlertSink, Finding
+from .config import load as load_cfg
 
 app = FastAPI(title="ThreatHawk API", version="0.2.0")
 
 API_KEY = os.environ.get("THREATHAWK_API_KEY", "change-me")
-FINDINGS_PATH = os.environ.get("THREATHAWK_FINDINGS_PATH", "./findings.jsonl")
-BANLIST_PATH = os.environ.get("THREATHAWK_BANLIST_PATH", "./banlist.txt")
+FINDINGS_PATH = os.environ.get("THREATHAWK_FINDINGS_PATH", "/tmp/findings.jsonl")
+BANLIST_PATH = os.environ.get("THREATHAWK_BANLIST_PATH", "/tmp/banlist.txt")
 BAN_ENABLED = os.environ.get("THREATHAWK_BAN_ENABLED", "false").lower() == "true"
 
 CF_API_TOKEN = os.environ.get("CF_API_TOKEN")
 CF_ZONE_ID = os.environ.get("CF_ZONE_ID")
 
-# load config (optional)
-CFG_PATH = os.environ.get("THREATHAWK_CONFIG", "./config.cloudrun.yaml")
-try:
-    CFG = load_cfg(CFG_PATH)
-except Exception:
-    class _Tmp: site="site"; environment="prod"; alerts=type("a",(object,),{"min_severity":3,"webhook":None,"jsonl_path":None})(); anomaly=type("b",(object,),{"window_seconds":60,"ema_alpha":0.2})()
-    CFG = _Tmp()
+CFG_PATH = os.environ.get("THREATHAWK_CONFIG", "./config.render.yaml")
+CFG = load_cfg(CFG_PATH)
 
-RULES = load_rules(getattr(CFG, "rules", {}).get("file") if hasattr(CFG, "rules") else None)
+RULES = load_rules(CFG.rules.get("file"))
 MODEL = AnomalyModel(window_seconds=CFG.anomaly.window_seconds, ema_alpha=CFG.anomaly.ema_alpha)
 ALERTS = AlertSink(min_severity=CFG.alerts.min_severity, webhook=CFG.alerts.webhook, jsonl_path=FINDINGS_PATH)
 
@@ -76,10 +71,8 @@ def ingest(source: str, minutes: int = 5, x_api_key: Optional[str] = Header(None
         raise HTTPException(status_code=400, detail="unsupported source")
     if not (CF_API_TOKEN and CF_ZONE_ID):
         raise HTTPException(status_code=400, detail="Cloudflare credentials missing")
-    # Pull logs
-    from threathawk.integrations.cloudflare_logpull import fetch_last_minutes
+    from .integrations.cloudflare_logpull import fetch_last_minutes
     lines = fetch_last_minutes(CF_API_TOKEN, CF_ZONE_ID, minutes=minutes)
-    # Process
     count = 0
     for line in lines:
         ev = parse_line(line)

@@ -1,0 +1,33 @@
+rules:
+  - name: SQLi.union_select
+    severity: 5
+    mitre: T1190
+    regex: '(?i)union\s+select|information_schema|sleep\s*\(|benchmark\s*\('
+  - name: SQLi.boolean
+    severity: 4
+    mitre: T1190
+    regex: "(?i)(?:'|%27)\s*or\s*1=1|--|/\*|\*/"
+  - name: XSS.script_tag
+    severity: 4
+    mitre: T1190
+    regex: '(?i)<\s*script|javascript:|onerror\s*=|onload\s*='
+  - name: LFI.path_traversal
+    severity: 5
+    mitre: T1190
+    regex: '(?i)\.\./|\.%2e%2e/|%2e%2e%2f|/etc/passwd|/proc/self'
+  - name: RCE.shell
+    severity: 5
+    mitre: T1059
+    regex: '(?i)(?:cmd|exec|system|passthru)\s*\(|bash\s+-c|;\s*\$?\(\w+\)'
+  - name: Scanner.user_agent
+    severity: 3
+    mitre: T1190
+    regex: '(?i)sqlmap|acunetix|nessus|nikto|burp|dirbuster'
+  - name: WP.attack_surface
+    severity: 3
+    mitre: T1190
+    regex: '(?i)/wp-login\.php|/wp-admin|/xmlrpc\.php'
+  - name: Auth.bruteforce
+    severity: 3
+    mitre: T1110
+    regex: '(?i)/login|/admin|/account/login'
