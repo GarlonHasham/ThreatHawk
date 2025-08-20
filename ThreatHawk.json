@@ -1,0 +1,142 @@
+{
+    "name": "ThreatHawk",
+    "subtitle": "🦅 AI-Powered Website Threat Scanner",
+    "description": "Welcome to ThreatHawk 🦅 — your AI-powered security scanner.\n\nHow to use:\n1. Type a command like:\n   - \"Scan my site https://yoursite.com\"\n   - \"Check for SQL Injection on my shop\"\n   - \"Give me a full threat report\"\n\n2. ThreatHawk will show:\n   - 🕷️ Threats found\n   - 🔧 Fixes to apply\n   - 📊 Next steps\n\n3. After fixing:\n   - \"Rescan my site\"\n   - \"Check if the threats are resolved\"\n\n👉 Always include the full URL (e.g., https://mysite.com).",
+    "instructions": "You are ThreatHawk, an AI-powered cybersecurity agent specialized in scanning websites for potential threats.\n\n### Core Role\n- Always use the connected ThreatHawk Render API (via Actions).\n- Provide clear, structured results: list detected issues, severity (1-5), and recommended fixes.\n- Never hallucinate results. Only show what the API reports.\n\n### Behavior\n- Keep it simple for non-technical users; map tech risk to business impact.\n- If API call fails: apologize, check /health, suggest retry and verify URL/key.\n\n### Boundaries\n- Do NOT execute exploits or destructive actions.\n- Do NOT reveal secrets or server internals.\n- Stay on-topic (web threat hunting).\n\n### Output Format\n1. ✅ Scan completed (or ❌ Scan failed)\n2. 🕷️ Detected Threats (severity, rules/MITRE)\n3. 🔧 Recommended Fixes (WAF rules, rate limits, hardening)\n4. 📊 Next Steps (rescan, tuning, 7/30/90-day plan)\n\n### Special Policies\n- Do not ban automatically. Always ask for explicit confirmation and show impact.\n- If no data yet: offer POST /ingest?source=cloudflare&minutes=5 (explain CF token/zone must be set in backend).",
+    "conversation_starters": [
+      "🔍 Scan my website for the last 60 minutes and give top IPs with remediation.",
+      "🛡️ Show only XSS or LFI hits from today.",
+      "📊 Make a week-1 report with MITRE TTPs and a 7/30/90-day plan.",
+      "⚙️ Run an ingest now for 10 minutes and list severity ≥4.",
+      "📥 Export the 50 most recent findings as JSON and summarize for management."
+    ],
+    "actions": [
+      {
+        "name": "ThreatHawk API (Render)",
+        "description": "Call the ThreatHawk backend running on Render.",
+        "spec": {
+          "schema_version": "v1",
+          "type": "openapi",
+          "openapi": {
+            "openapi": "3.0.1",
+            "info": {
+              "title": "ThreatHawk API",
+              "version": "1.0.0",
+              "description": "ThreatHawk 🦅 API — health, findings, ingestion, optional ban."
+            },
+            "servers": [
+              {
+                "url": "https://<your-render-url>.onrender.com",
+                "description": "ThreatHawk Render Deployment"
+              }
+            ],
+            "paths": {
+              "/health": {
+                "get": {
+                  "operationId": "health",
+                  "summary": "Health check",
+                  "responses": {
+                    "200": { "description": "OK" }
+                  }
+                }
+              },
+              "/findings": {
+                "get": {
+                  "operationId": "getFindings",
+                  "summary": "Get recent threat findings",
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "limit",
+                      "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 500 }
+                    },
+                    {
+                      "in": "query",
+                      "name": "min_severity",
+                      "schema": { "type": "integer", "default": 3, "minimum": 1, "maximum": 5 }
+                    },
+                    {
+                      "in": "query",
+                      "name": "site",
+                      "schema": { "type": "string", "example": "example.com" }
+                    }
+                  ],
+                  "responses": {
+                    "200": {
+                      "description": "Findings list",
+                      "content": { "application/json": {} }
+                    }
+                  }
+                }
+              },
+              "/ingest": {
+                "post": {
+                  "operationId": "ingestNow",
+                  "summary": "Pull logs and analyze now",
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "source",
+                      "required": true,
+                      "schema": { "type": "string", "enum": ["cloudflare"] }
+                    },
+                    {
+                      "in": "query",
+                      "name": "minutes",
+                      "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 60 }
+                    }
+                  ],
+                  "responses": {
+                    "200": { "description": "Ingestion result", "content": { "application/json": {} } }
+                  }
+                }
+              },
+              "/ban": {
+                "post": {
+                  "operationId": "banIp",
+                  "summary": "Request an IP ban (manual approval advised)",
+                  "requestBody": {
+                    "required": true,
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "type": "object",
+                          "required": ["ip"],
+                          "properties": {
+                            "ip": { "type": "string", "example": "203.0.113.10" },
+                            "reason": { "type": "string", "example": "Repeated SQLi attempts" }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "responses": {
+                    "200": { "description": "Ban accepted/ignored", "content": { "application/json": {} } }
+                  }
+                }
+              }
+            },
+            "components": {
+              "securitySchemes": {
+                "ApiKeyAuth": {
+                  "type": "apiKey",
+                  "in": "header",
+                  "name": "X-API-Key"
+                }
+              }
+            },
+            "security": [
+              { "ApiKeyAuth": [] }
+            ]
+          },
+          "auth": {
+            "type": "api_key",
+            "name": "X-API-Key",
+            "value": "YOUR_API_KEY_HERE",
+            "in": "header"
+          }
+        }
+      }
+    ]
+  }
+  
