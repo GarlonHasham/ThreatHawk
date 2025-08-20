@@ -1,0 +1,29 @@
+site: "codeniacs.ai"
+environment: "prod"
+
+inputs:
+  files: []
+
+rules:
+  file: ./rules.yaml
+
+anomaly:
+  ema_alpha: 0.2
+  window_seconds: 60
+
+alerts:
+  min_severity: 3
+  stdout: true
+  jsonl_path: /data/findings.jsonl
+  webhook: null
+
+banlist:
+  file: /data/banlist.txt
+  enabled: false
+
+server:
+  enabled: true
+  host: 0.0.0.0
+  port: 8000
+  api_key: "change-me"
+  auto_run: true
