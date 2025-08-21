@@ -1,63 +1,26 @@
-services:
-  - type: web
-    name: threathawk-api
-    env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn threathawk.server:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: THREATHAWK_API_KEY
-        value: thk_live_CHANGE_ME
-      - key: THREATHAWK_FINDINGS_PATH
-        value: /tmp/findings.jsonl
-      - key: THREATHAWK_BAN_ENABLED
-        value: "false"
-      # Uncomment if you want ingestion via Cloudflare:
-      # - key: CF_API_TOKEN
-      #   value: cf_live_YOURTOKEN
-      # - key: CF_ZONE_ID
-      #   value: YOUR_ZONE_ID
-
-  # Optional worker if you prefer internal scheduling over Render Cron Jobs
-  - type: worker
-    name: threathawk-scheduler
-    env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python scheduler_render.py
-    envVars:
-      - key: API_BASE
-        fromService:
-          name: threathawk-api
-          type: web
-          property: uri
-      - key: X_API_KEY
-        value: thk_live_CHANGE_ME
-      # If needed for on-demand ingestion inside worker:
-      - key: CF_API_TOKEN
-        value: cf_live_YOURTOKEN
-      - key: CF_ZONE_ID
-        value: YOUR_ZONE_ID
-
-# render.yaml — Deploy ThreatHawk to Render
+# render.yaml — Infrastructure as Code for ThreatHawk
 services:
   - type: web
     name: threathawk
     env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port 10000
+    plan: free        # change to 'starter' or higher for production
+    region: frankfurt # pick closest to users
+    buildCommand: |
+      pip install --no-cache-dir --upgrade -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: THREATHAWK_API_KEY
-        sync: false        # set this in Render dashboard (Environment tab)
+        sync: false
+      - key: THREATHAWK_SITE
+        sync: false
+      - key: THREATHAWK_ENV
+        value: prod
       - key: THREATHAWK_FINDINGS_PATH
         value: /tmp/findings.jsonl
       - key: THREATHAWK_BANLIST_PATH
         value: /tmp/banlist.txt
       - key: THREATHAWK_BAN_ENABLED
-        value: "false"
-      - key: THREATHAWK_ENV
-        value: "prod"
+        value: "true"
       - key: THREATHAWK_MIN_SEVERITY
         value: "3"
       - key: THREATHAWK_EMA_ALPHA
@@ -65,6 +28,6 @@ services:
       - key: THREATHAWK_WINDOW_SECONDS
         value: "60"
       - key: CF_API_TOKEN
-        sync: false        # set securely in Render (only if Cloudflare ingest needed)
+        sync: false
       - key: CF_ZONE_ID
-        sync: false        # set securely in Render (only if Cloudflare ingest needed)
+        sync: false
