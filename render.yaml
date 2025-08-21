@@ -38,3 +38,33 @@ services:
         value: cf_live_YOURTOKEN
       - key: CF_ZONE_ID
         value: YOUR_ZONE_ID
+
+# render.yaml — Deploy ThreatHawk to Render
+services:
+  - type: web
+    name: threathawk
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: THREATHAWK_API_KEY
+        sync: false        # set this in Render dashboard (Environment tab)
+      - key: THREATHAWK_FINDINGS_PATH
+        value: /tmp/findings.jsonl
+      - key: THREATHAWK_BANLIST_PATH
+        value: /tmp/banlist.txt
+      - key: THREATHAWK_BAN_ENABLED
+        value: "false"
+      - key: THREATHAWK_ENV
+        value: "prod"
+      - key: THREATHAWK_MIN_SEVERITY
+        value: "3"
+      - key: THREATHAWK_EMA_ALPHA
+        value: "0.2"
+      - key: THREATHAWK_WINDOW_SECONDS
+        value: "60"
+      - key: CF_API_TOKEN
+        sync: false        # set securely in Render (only if Cloudflare ingest needed)
+      - key: CF_ZONE_ID
+        sync: false        # set securely in Render (only if Cloudflare ingest needed)
