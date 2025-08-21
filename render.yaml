@@ -1,26 +1,26 @@
-# render.yaml — Infrastructure as Code for ThreatHawk
+# render.yaml — ThreatHawk on Render
 services:
   - type: web
     name: threathawk
     env: python
-    plan: free        # change to 'starter' or higher for production
-    region: frankfurt # pick closest to users
+    plan: free
+    region: frankfurt
     buildCommand: |
       pip install --no-cache-dir --upgrade -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3          # <<< pin Python here (avoids Rust build)
       - key: THREATHAWK_API_KEY
         sync: false
-      - key: THREATHAWK_SITE
-        sync: false
-      - key: THREATHAWK_ENV
-        value: prod
       - key: THREATHAWK_FINDINGS_PATH
         value: /tmp/findings.jsonl
       - key: THREATHAWK_BANLIST_PATH
         value: /tmp/banlist.txt
       - key: THREATHAWK_BAN_ENABLED
         value: "true"
+      - key: THREATHAWK_ENV
+        value: prod
       - key: THREATHAWK_MIN_SEVERITY
         value: "3"
       - key: THREATHAWK_EMA_ALPHA
